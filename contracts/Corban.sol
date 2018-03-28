@@ -23,7 +23,7 @@ contract Corban {
     function ethForTokens(uint256 _tokenAmount) public view returns(uint256) {
         uint256 ethBalance = this.balance;
         uint256 tokenBalance = token.balanceOf(this);
-        return ethBalance - ethBalance * tokenBalance / (tokenBalance + _tokenAmount);
+        return ethBalance * _tokenAmount / (tokenBalance + _tokenAmount);
     }
 
     // Public Methods
@@ -53,7 +53,7 @@ contract Corban {
     function _tokensForEth(uint256 _ethAmount, uint256 _balanceFix) internal view returns(uint256) {
         uint256 ethBalance = this.balance - _balanceFix;
         uint256 tokenBalance = token.balanceOf(this);
-        return tokenBalance - tokenBalance * ethBalance / (ethBalance + _ethAmount);
+        return tokenBalance * _ethAmount / (ethBalance + _ethAmount);
     }
 
 }
