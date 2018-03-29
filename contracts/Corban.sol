@@ -42,6 +42,7 @@ contract Corban {
     }
 
     function sellTokens(address _seller, uint256 _tokenAmount, uint256 _minEthAmount, address _target, bytes _data) public {
+        require(_seller == tx.origin);
         uint256 ethAmount = ethForTokens(_tokenAmount);
         require(ethAmount >= _minEthAmount);
         token.transferFrom(_seller, this, _tokenAmount);
