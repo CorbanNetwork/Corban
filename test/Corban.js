@@ -157,4 +157,50 @@ contract('Corban', function ([_, wallet1, wallet2, wallet3, wallet4, wallet5]) {
         (await abc.balanceOf.call(wallet2)).should.be.bignumber.equal(36);
     })
 
+    it('should not be able to steal tokens', async function() {
+        await abc.transfer(wallet1, 40);
+
+        const buyData = '0x' + abi.simpleEncode('buyTokens(address,uint256)', wallet2, 0).toString('hex');
+        await abc.contract.approve["address,uint256"](abcCorban.address, 40, {from: wallet1, gas: 1000000});
+        let rejectected = false;
+        try {
+            await abcCorban.contract.sellTokens["address,uint256,uint256,address,bytes"](wallet1, 40, 0, xyzCorban.address, buyData, {from: wallet2, gas: 1000000});
+        } catch(e) {
+            rejectected = true;
+        }
+        rejectected.should.be.true;
+    })
+
+    it('should be able to buy tokens and sell back', async function() {
+        // Buy tokens
+        await abcCorban.buyTokens(wallet1, 0, {value: 100, from: wallet1});
+        (await abc.balanceOf.call(wallet1)).should.be.bignumber.equal(166);
+
+        // Sell tokens
+        var data = '0x' + abi.simpleEncode('sellTokens(address,uint256,uint256)', wallet1, 166, 0).toString('hex');
+        const oldBalance = await web3.eth.getBalance(wallet1);
+        const txid = await abc.contract.approve["address,uint256,bytes"](abcCorban.address, 166, data, {from: wallet1, gas: 1000000});
+        const receipt = web3.eth.getTransactionReceipt(txid);
+        const fees = receipt.gasUsed * 1; //web3.eth.gasPrice;
+        web3.toBigNumber(await web3.eth.getBalance(wallet1)).sub(oldBalance).add(fees).should.be.bignumber.equal(99);
+    })
+
+    it('should be able to exchange tokens and back (abc => xyz => abc)', async function() {
+        await abc.transfer(wallet1, 100);
+
+        {
+            const buyData = abi.simpleEncode('buyTokens(address,uint256)', wallet1, 0);
+            const sellData = '0x' + abi.simpleEncode('sellTokens(address,uint256,uint256,address,bytes)', wallet1, 100, 0, xyzCorban.address, buyData).toString('hex');
+            await abc.contract.approve["address,uint256,bytes"](abcCorban.address, 100, sellData, {from: wallet1, gas: 1000000});
+            (await xyz.balanceOf.call(wallet1)).should.be.bignumber.equal(21);
+        }
+
+        {
+            const buyData = abi.simpleEncode('buyTokens(address,uint256)', wallet1, 0);
+            const sellData = '0x' + abi.simpleEncode('sellTokens(address,uint256,uint256,address,bytes)', wallet1, 21, 0, abcCorban.address, buyData).toString('hex');
+            await xyz.contract.approve["address,uint256,bytes"](xyzCorban.address, 21, sellData, {from: wallet1, gas: 1000000});
+            (await abc.balanceOf.call(wallet1)).should.be.bignumber.equal(94);
+        }
+    })
+
 })
