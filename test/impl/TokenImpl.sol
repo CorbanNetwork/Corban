@@ -7,7 +7,7 @@ import "zeppelin-solidity/contracts/token/ERC827/ERC827Token.sol";
 contract TokenImpl is MintableToken, ERC827Token {
 
     function TokenImpl() public {
-        mint(msg.sender, 1000000);
+        mint(msg.sender, 1000000 * 10**18);
     }
 
 }
